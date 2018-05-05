@@ -1,6 +1,6 @@
 package uk.me.rembrandt.sparkhivespike
 
-import java.sql.Date
+import java.sql.{Date, Timestamp}
 
 case class SecurityDetails(
   secId: Int,
@@ -24,5 +24,5 @@ case class SecurityDetails(
   ssnCode: String,
   insDt: String,
   updDt: String,
-  normalisationDate: Date,
+  normalisationDate: Timestamp,
   isNew: Boolean)
