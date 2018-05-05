@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS security_raw;
+
 CREATE TABLE security_raw(
   SecId integer,
   SecMnem char(20),
@@ -22,7 +24,8 @@ CREATE TABLE security_raw(
   InsSrc char(4),
   InsDt char(17),
   UpdSrc char(4),
-  UpdDt char(17));
+  UpdDt char(17) )
+  ROW FORMAT DELIMITED FIELDS TERMINATED BY "|";
 
-LOAD DATA LOCAL INPATH('GNM_SEC.DAT') OVERWRITE INTO TABLE security_raw;
+LOAD DATA LOCAL INPATH 'GNM_SEC.DAT' OVERWRITE INTO TABLE security_raw;
 
