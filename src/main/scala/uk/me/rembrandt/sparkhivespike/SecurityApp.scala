@@ -17,7 +17,7 @@ object SecurityApp {
       .appName("SecurityApp")
       .config("spark.sql.wharehouse.dir", "/user/hive/warehouse")
       .config("spark.sql.hive.metastore.version", "2.1")
-      .config("spark.sql.hive.metastore.jars", "maven")
+      .config("spark.sql.hive.metastore.jars", sys.env.get("HIVE_HOME").map(hh => s"$hh/lib/*").getOrElse("maven"))
       .enableHiveSupport()
       .getOrCreate()
 
@@ -51,13 +51,23 @@ object SecurityEtl {
 
     val secDetails = secDf.as[SecurityDetails]
 
-    val grpd = secDetails.map(sd => {
+    val pregrpd = secDetails.map(sd => {
       (
         sd.prefix,
         sd.product,
         sd.issDt.take(4).toInt,
         sd.issAmt)
-    }).show
+    })
+
+    val prefixProdIssYearInterim = pregrpd.groupByKey(t => (t._1, t._2, t._3)).agg(
+      min("_4").as[Double], max("_4").as[Double], sum("_4").as[Double])
+
+    val prefixProdIssYear = prefixProdIssYearInterim.select("key._1", "key._2", "key._3", "min(_4)", "max(_4)", "sum(_4)")
+      .withColumnRenamed("_1", "Prefix").withColumnRenamed("_2", "Product").withColumnRenamed("_3", "IssueYear")
+    prefixProdIssYear.show()
+
+    val prefixProductTotIssueAmounts = prefixProdIssYear.groupBy("Product").pivot("Prefix").sum("sum(_4)").na.fill(0.0)
+    prefixProductTotIssueAmounts.show()
 
     secDetails.show()
   }
