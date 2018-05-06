@@ -2,7 +2,8 @@ package uk.me.rembrandt.sparkhivespike
 
 import java.sql.{Date, Timestamp}
 import java.time.format.DateTimeFormatter
-import java.time.LocalDate
+import java.time.{LocalDate, ZoneId}
+import java.util.Calendar
 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
@@ -15,6 +16,8 @@ object SecurityApp {
       .master("local")
       .appName("SecurityApp")
       .config("spark.sql.wharehouse.dir", "/user/hive/warehouse")
+      .config("spark.sql.hive.metastore.version", "2.1")
+      .config("spark.sql.hive.metastore.jars", "maven")
       .enableHiveSupport()
       .getOrCreate()
 
@@ -47,6 +50,14 @@ object SecurityEtl {
       .withColumn("IsNew", isNewCreator)
 
     val secDetails = secDf.as[SecurityDetails]
+
+    val grpd = secDetails.map(sd => {
+      (
+        sd.prefix,
+        sd.product,
+        sd.issDt.take(4).toInt,
+        sd.issAmt)
+    }).show
 
     secDetails.show()
   }
