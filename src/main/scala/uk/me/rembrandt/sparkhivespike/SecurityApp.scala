@@ -50,6 +50,7 @@ object SecurityEtl {
       .withColumn("IsNew", isNewCreator)
 
     val secDetails = secDf.as[SecurityDetails]
+    secDetails.show()
 
     val prefixProdIssYearInterim = secDetails.groupByKey(sd => (sd.prefix, sd.product, sd.issDt.take(4).toInt, sd.issAmt))
       .agg(min("IssAmt").as[Double], max("IssAmt").as[Double], sum("IssAmt").as[Double])
@@ -62,6 +63,16 @@ object SecurityEtl {
     val prefixProductTotIssueAmounts = prefixProdIssYear.groupBy("Product").pivot("Prefix").sum("sum(IssAmt)").na.fill(0.0)
     prefixProductTotIssueAmounts.show()
 
-    secDetails.show()
+    val colsToSum = prefixProductTotIssueAmounts.columns.filterNot(_ == "Product").map(col(_))
+
+    val withTotals = prefixProductTotIssueAmounts.withColumn("Total", colsToSum.reduce(_ + _))
+    withTotals.show()
+
+    val totalsB = withTotals.groupBy().sum().withColumn("Total", lit("Total"))
+    val totalsC = totalsB.select(totalsB.columns.last, totalsB.columns.dropRight(1): _*)
+    totalsC.show()
+
+    val end = withTotals.union(totalsC)
+    end.show()
   }
 }
